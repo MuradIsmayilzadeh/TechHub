@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import ProductCard from "./components/ProductCard";
+import { sampleProducts } from "./lib/sample-products";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -9,6 +11,12 @@ export default function Home() {
   const [category, setCategory] = useState("Hamısı");
 
   useEffect(() => {
+    // Static builds (GitHub Pages) have no API: show the built-in catalogue.
+    if (process.env.NEXT_PUBLIC_STATIC_EXPORT) {
+      setProducts(sampleProducts);
+      setLoading(false);
+      return;
+    }
     fetch("/api/posts")
       .then((r) => (r.ok ? r.json() : { products: [] }))
       .then((d) => setProducts(d.products || []))
@@ -33,7 +41,7 @@ export default function Home() {
           <p className="mt-5 max-w-xl text-lg text-zinc-400">Telefon, noutbuk, qulaqlıq və aksesuarlar. Rəsmi zəmanət və Bakı daxili pulsuz çatdırılma.</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#products" className="btn-primary">Məhsullara bax</a>
-            <a href="/contact" className="btn-ghost">Bizimlə əlaqə</a>
+            <Link href="/contact" className="btn-ghost">Bizimlə əlaqə</Link>
           </div>
           <div className="mt-14 grid max-w-2xl grid-cols-3 gap-6 text-sm text-zinc-400">
             <div><strong className="block text-2xl text-white">24 saat</strong>Çatdırılma</div>

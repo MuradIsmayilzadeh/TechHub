@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProduct } from "../../lib/products";
+import { sampleProducts } from "../../lib/sample-products";
 import OrderForm from "./OrderForm";
 
 export const dynamic = "force-dynamic";
+
+// Used by the static GitHub Pages build.
+export function generateStaticParams() {
+  return sampleProducts.map((p) => ({ id: p._id }));
+}
 
 export default async function BuyPage({ params }) {
   const product = await getProduct(params.id);
