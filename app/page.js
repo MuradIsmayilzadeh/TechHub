@@ -1,76 +1,73 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { ScaleLoader    } from 'react-spinners';
+import { useEffect, useMemo, useState } from "react";
+import ProductCard from "./components/ProductCard";
 
 export default function Home() {
-  const [products, setProducts] = useState({ products: [] });
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("Hamısı");
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/posts');
-        const result = await response.json();
-        setProducts(result);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
+    fetch("/api/posts")
+      .then((r) => (r.ok ? r.json() : { products: [] }))
+      .then((d) => setProducts(d.products || []))
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
   }, []);
 
-
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-      <ScaleLoader color={'#FF4500'} loading={loading} height={50} width={7}  radius={10} margin={5} />
-      </div>
-    );
-  }
-
-  if (!products.products || products.products.length === 0) {
-    return <div>No products found.</div>; // or any loading indicator/message you prefer
-  }
+  const categories = useMemo(() => ["Hamısı", ...new Set(products.map((p) => p.category).filter(Boolean))], [products]);
+  const visible = products.filter(
+    (p) => (category === "Hamısı" || p.category === category) && p.name.toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 md:justify-between">
-      <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {products.products.map((product) => (
-          <a
-            key={product._id}
-            href={`/product/${product._id}`}
-            className="group overflow-hidden bg-white rounded-lg shadow-md transition-transform transform hover:scale-105 block mb-4"
-          >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="object-cover w-full h-40 md:h-56"
-            />
-  
-            <div className="p-4">
-              <h2 className="text-xl font-semibold mb-2">{product.name}</h2>
-              <p className="text-sm text-gray-700">
-                {product.description.slice(0, 10)} ...
-              </p>
-              <div className="mt-4">
-                <span className="text-lg font-bold text-red-500">
-                  {product.price}₼
-                </span>
-                <a
-                  href={`/buy/${product._id}`}
-                  className="block mt-2 w-full px-6 py-3 bg-green-500 text-white rounded-md focus:outline-none transition-transform transform hover:scale-105"
-                >
-                  Sifariş Et
-                </a>
-              </div>
-            </div>
-          </a>
-        ))}
-      </div>
-    </main>
+    <>
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-40 right-0 h-96 w-96 rounded-full bg-orange-500/20 blur-3xl" />
+        <div className="mx-auto max-w-6xl px-4 py-20 sm:py-28">
+          <p className="text-sm font-semibold uppercase tracking-widest text-orange-500">Yeni kolleksiya</p>
+          <h1 className="mt-4 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight sm:text-6xl">
+            Ən son texnologiya, <span className="text-orange-500">ən yaxşı qiymətə</span>.
+          </h1>
+          <p className="mt-5 max-w-xl text-lg text-zinc-400">Telefon, noutbuk, qulaqlıq və aksesuarlar. Rəsmi zəmanət və Bakı daxili pulsuz çatdırılma.</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href="#products" className="btn-primary">Məhsullara bax</a>
+            <a href="/contact" className="btn-ghost">Bizimlə əlaqə</a>
+          </div>
+          <div className="mt-14 grid max-w-2xl grid-cols-3 gap-6 text-sm text-zinc-400">
+            <div><strong className="block text-2xl text-white">24 saat</strong>Çatdırılma</div>
+            <div><strong className="block text-2xl text-white">12 ay</strong>Rəsmi zəmanət</div>
+            <div><strong className="block text-2xl text-white">0%</strong>Hissə-hissə ödəniş</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="products" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-24">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="text-3xl font-bold">Məhsullar</h2>
+          <input className="field sm:max-w-xs" placeholder="Məhsul axtar..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div className="mb-8 flex flex-wrap gap-2">
+          {categories.map((c) => (
+            <button key={c} onClick={() => setCategory(c)} className={`rounded-full px-4 py-2 text-sm transition ${category === c ? "bg-orange-500 text-white" : "border border-white/10 text-zinc-300 hover:bg-white/5"}`}>
+              {c}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-80 animate-pulse rounded-2xl bg-zinc-900" />)}
+          </div>
+        ) : visible.length === 0 ? (
+          <p className="rounded-2xl border border-white/10 p-10 text-center text-zinc-400">Heç bir məhsul tapılmadı.</p>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {visible.map((product) => <ProductCard key={product._id} product={product} />)}
+          </div>
+        )}
+      </section>
+    </>
   );
 }

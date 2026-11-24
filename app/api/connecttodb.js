@@ -1,34 +1,23 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-}
-
 let cached = global.mongoose;
+if (!cached) cached = global.mongoose = { conn: null, promise: null };
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-async function dbConnect() {
-  if (cached.conn) {
-    return cached.conn;
-  }
-
+// Returns a connection, or null when no database is configured / reachable.
+export default async function dbConnect() {
+  if (!MONGODB_URI) return null;
+  if (cached.conn) return cached.conn;
   if (!cached.promise) {
-    const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, options).then((mongoose) => {
-      return mongoose;
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI, { serverSelectionTimeoutMS: 4000 })
+      .catch((err) => {
+        cached.promise = null;
+        console.error("MongoDB connection failed, using sample data:", err.message);
+        return null;
+      });
   }
   cached.conn = await cached.promise;
   return cached.conn;
 }
-
-export default dbConnect;
